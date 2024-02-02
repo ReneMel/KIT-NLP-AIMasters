@@ -22,6 +22,7 @@ mapeo_tipos = {
     'Safe Email': 'ham'
 }
 
+# Iterar sobre cada archivo CSV en el directorio
 for archivo_csv in os.listdir(directorio_csv):
     if archivo_csv.endswith('.csv'):
         # Leer el CSV y verificar si hay al menos una columna

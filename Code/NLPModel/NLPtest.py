@@ -1,86 +1,112 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split
-from transformers import RobertaTokenizer, RobertaForSequenceClassification, AdamW
-from torch.utils.data import Dataset, DataLoader
 import torch
-from sklearn.metrics import accuracy_score, classification_report
+from torch.utils.data import Dataset, DataLoader
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from transformers import BertTokenizer, BertForSequenceClassification, AdamW
+from tqdm import tqdm
+from sklearn.metrics import classification_report
 
-data = pd.read_csv('C:/Users/renemel/Documents/KIT/Code/NLPModel/CombinedData22012024.csv')
+# Cargar datos desde el CSV
+df = pd.read_csv('/home/renemel/Documents/KIT-NLP-AIMasters/Code/NLPModel/CombinedData22012024.csv')
 
-train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+# Usar LabelEncoder para asignar valores numéricos a las etiquetas
+le = LabelEncoder()
+df['type'] = le.fit_transform(df['type'])
 
-tokenizer = RobertaTokenizer.from_pretrained('roberta-base')
+# Dividir los datos en conjunto de entrenamiento y prueba
+train_data, test_data, train_labels, test_labels = train_test_split(
+    df['text'], df['type'], test_size=0.2, random_state=42
+)
 
-def tokenize_emails(emails, max_length=512):
-    concatenated_emails = ' '.join(str(email) for email in emails if isinstance(email, str))
-    tokenized_emails = tokenizer(concatenated_emails, max_length=max_length, truncation=True, padding=True, return_tensors='pt', add_special_tokens=True)
-    return tokenized_emails
-
-train_encodings = tokenize_emails(list(train_data['text']))
-test_encodings = tokenize_emails(list(test_data['text']))
-
-train_labels = [1 if label == 'spam' else 0 for label in list(train_data['type'])]
-test_labels = [1 if label == 'spam' else 0 for label in list(test_data['type'])]
+# Tokenizar y preparar los datos
+tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 class EmailDataset(Dataset):
-    def __init__(self, encodings, labels):
-        self.encodings = encodings
-        self.labels = torch.tensor(labels)
-
+    def __init__(self, texts, labels, tokenizer, max_len=100):
+        self.texts = texts
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+    
     def __len__(self):
-        return len(self.labels)
-
+        return len(self.texts)
+    
     def __getitem__(self, idx):
-        item = {key: val[idx].squeeze() for key, val in self.encodings.items()}
-        item['labels'] = self.labels[idx]
-        return item
+        try:
+            text = str(self.texts.iloc[idx])
+        except Exception as e:
+            print(f"Error at index {idx}: {e}")
+            raise
+        label = int(self.labels.iloc[idx])
 
+        encoding = self.tokenizer.encode_plus(
+            text,
+            add_special_tokens=True,
+            max_length=self.max_len,
+            padding='max_length',
+            return_tensors='pt',
+            truncation=True
+        )
 
-train_dataset = EmailDataset(train_encodings, train_labels)
-test_dataset = EmailDataset(test_encodings, test_labels)
+        return {
+            'input_ids': encoding['input_ids'].flatten(),
+            'attention_mask': encoding['attention_mask'].flatten(),
+            'label': torch.tensor(label, dtype=torch.long)
+        }
 
-train_loader = DataLoader(train_dataset, batch_size=4, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=4, shuffle=False)
+train_dataset = EmailDataset(train_data, train_labels, tokenizer)
+test_dataset = EmailDataset(test_data, test_labels, tokenizer)
 
-model = RobertaForSequenceClassification.from_pretrained('roberta-base', num_labels=2)
-optimizer = AdamW(model.parameters(), lr=5e-5)
+train_loader = DataLoader(train_dataset, batch_size=16, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=16, shuffle=False)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+# Crear y entrenar el modelo
+model = BertForSequenceClassification.from_pretrained('bert-base-uncased', num_labels=len(le.classes_))
+optimizer = AdamW(model.parameters(), lr=2e-5)
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model.to(device)
-print("Longitud del conjunto de entrenamiento:", len(train_dataset))
 
-for epoch in range(3):
+epochs = 3
+
+for epoch in range(epochs):
     model.train()
-    for batch_idx, batch in enumerate(train_loader):
-        print("Índices utilizados:", batch_idx * train_loader.batch_size, "a", (batch_idx + 1) * train_loader.batch_size - 1)
-    for batch in train_loader:
+    total_loss = 0
+
+    for batch in tqdm(train_loader, desc=f'Epoch {epoch + 1}/{epochs}'):
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        labels = batch['labels'].to(device)
+        labels = batch['label'].to(device)
 
         optimizer.zero_grad()
+
         outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
         loss = outputs.loss
+        total_loss += loss.item()
+
         loss.backward()
         optimizer.step()
 
+    average_loss = total_loss / len(train_loader)
+    print(f'Training Loss: {average_loss}')
+
+# Evaluación del modelo
 model.eval()
-predictions = []
-true_labels = []
+all_predictions = []
+all_labels = []
 
 with torch.no_grad():
-    for batch in test_loader:
+    for batch in tqdm(test_loader, desc='Evaluating'):
         input_ids = batch['input_ids'].to(device)
         attention_mask = batch['attention_mask'].to(device)
-        labels = batch['labels'].to(device)
+        labels = batch['label'].to(device)
 
         outputs = model(input_ids, attention_mask=attention_mask)
-        logits = outputs.logits
-        predictions.extend(torch.argmax(logits, dim=1).cpu().numpy())
-        true_labels.extend(labels.cpu().numpy())
+        predictions = torch.argmax(outputs.logits, dim=1)
 
-accuracy = accuracy_score(true_labels, predictions)
-print(f'Accuracy: {accuracy:.2f}')
+        all_predictions.extend(predictions.cpu().numpy())
+        all_labels.extend(labels.cpu().numpy())
 
-classification_report_output = classification_report(true_labels, predictions)
-print(f'Classification Report:\n{classification_report_output}')
+# Imprimir informe de clasificación
+print(classification_report(all_labels, all_predictions))

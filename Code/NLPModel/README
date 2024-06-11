@@ -1,2 +1,0 @@
-pip install -U scikit-learn scipy matplotlib
-pip install transformers pandas torch

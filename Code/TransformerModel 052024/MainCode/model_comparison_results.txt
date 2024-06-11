@@ -1,0 +1,55 @@
+Model: distilbert-base-uncased
+              precision    recall  f1-score   support
+
+           0     0.9834    0.9904    0.9869     34712
+           1     0.9930    0.9879    0.9904     47717
+
+    accuracy                         0.9889     82429
+   macro avg     0.9882    0.9891    0.9887     82429
+weighted avg     0.9890    0.9889    0.9889     82429
+
+
+Model: bert-base-uncased
+              precision    recall  f1-score   support
+
+           0     0.9954    0.9802    0.9877     34712
+           1     0.9857    0.9967    0.9912     47717
+
+    accuracy                         0.9897     82429
+   macro avg     0.9906    0.9884    0.9895     82429
+weighted avg     0.9898    0.9897    0.9897     82429
+
+
+Model: xlnet-base-cased
+              precision    recall  f1-score   support
+
+           0     0.9924    0.9783    0.9853     34712
+           1     0.9844    0.9945    0.9894     47717
+
+    accuracy                         0.9877     82429
+   macro avg     0.9884    0.9864    0.9873     82429
+weighted avg     0.9877    0.9877    0.9877     82429
+
+
+Model: roberta-base
+              precision    recall  f1-score   support
+
+           0     0.9819    0.9931    0.9875     34712
+           1     0.9949    0.9867    0.9908     47717
+
+    accuracy                         0.9894     82429
+   macro avg     0.9884    0.9899    0.9891     82429
+weighted avg     0.9894    0.9894    0.9894     82429
+
+
+Model: albert-base-v2
+              precision    recall  f1-score   support
+
+           0     0.9899    0.9842    0.9871     34712
+           1     0.9886    0.9927    0.9906     47717
+
+    accuracy                         0.9891     82429
+   macro avg     0.9893    0.9885    0.9889     82429
+weighted avg     0.9891    0.9891    0.9891     82429
+
+

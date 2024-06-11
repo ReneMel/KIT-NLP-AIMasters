@@ -1,0 +1,44 @@
+Model: Logistic Regression
+              precision    recall  f1-score   support
+
+           0     0.9775    0.9759    0.9767     34721
+           1     0.9824    0.9836    0.9830     47656
+
+    accuracy                         0.9804     82377
+   macro avg     0.9800    0.9797    0.9799     82377
+weighted avg     0.9804    0.9804    0.9804     82377
+
+
+Model: Random Forest
+              precision    recall  f1-score   support
+
+           0     0.9769    0.9736    0.9752     34721
+           1     0.9808    0.9832    0.9820     47656
+
+    accuracy                         0.9792     82377
+   macro avg     0.9788    0.9784    0.9786     82377
+weighted avg     0.9792    0.9792    0.9792     82377
+
+
+Model: Support Vector Machine
+              precision    recall  f1-score   support
+
+           0     0.9819    0.9792    0.9805     34721
+           1     0.9849    0.9868    0.9859     47656
+
+    accuracy                         0.9836     82377
+   macro avg     0.9834    0.9830    0.9832     82377
+weighted avg     0.9836    0.9836    0.9836     82377
+
+
+Model: Naive Bayes
+              precision    recall  f1-score   support
+
+           0     0.9842    0.9312    0.9569     34721
+           1     0.9517    0.9891    0.9701     47656
+
+    accuracy                         0.9647     82377
+   macro avg     0.9680    0.9601    0.9635     82377
+weighted avg     0.9654    0.9647    0.9645     82377
+
+
